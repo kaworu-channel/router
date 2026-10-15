@@ -191,5 +191,6 @@ async fn test_igw_cache_aware_routes_repeated_prompt_to_one_worker() {
     let picks: Vec<_> = (0..20)
         .map(|_| policy.select_worker(&workers, Some("shared system prompt")))
         .collect();
+    assert!(picks[0].is_some(), "{picks:?}");
     assert!(picks.iter().all(|pick| *pick == picks[0]), "{picks:?}");
 }

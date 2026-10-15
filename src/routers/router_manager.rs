@@ -6,7 +6,6 @@
 
 use crate::config::RouterConfig;
 use crate::core::{CircuitBreakerConfig, Worker, WorkerFactory, WorkerRegistry, WorkerType};
-use crate::policies::{CacheAwarePolicy, LoadBalancingPolicy};
 use crate::protocols::spec::{
     ChatCompletionRequest, CompletionRequest, EmbeddingRequest, GenerateRequest,
     InferenceGenerateRequest, RerankRequest, ResponsesRequest,
@@ -219,10 +218,10 @@ impl RouterManager {
         let policy_hint = labels.get("policy").map(|s| s.as_str());
         let policy = self.policy_registry.on_worker_added(&model_id, policy_hint);
 
-        // cache_aware only routes by prefix once init_workers() has built the
+        // Stateful policies (cache_aware) need init_workers() to build the
         // model's tree; without it every request takes the random fallback.
-        if let Some(cache_aware) = policy.as_any().downcast_ref::<CacheAwarePolicy>() {
-            cache_aware.init_workers(&self.worker_registry.get_by_model_fast(&model_id));
+        if policy.requires_initialization() {
+            policy.init_workers(&self.worker_registry.get_by_model_fast(&model_id));
         }
 
         // Log which type of router would handle this worker (for debugging)
