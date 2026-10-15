@@ -561,6 +561,12 @@ impl GenerationRequest for ChatCompletionRequest {
         // a session on one worker. Without one, return the conversation so
         // cache_aware can match shared prefixes; an empty string here made every
         // request miss the tree and fall back to min-load.
+        //
+        // The conversation key is best-effort: it ignores tool schemas, tool_call
+        // arguments and image content, so requests differing only there share a
+        // key. Unlike extract_text_for_program_scheduling it adds no role prefix
+        // and no trim, on purpose: cache_aware needs a prefix that only grows as
+        // turns are appended.
         if let Some(session_id) = self
             .session_params
             .as_ref()
